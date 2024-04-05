@@ -8,13 +8,6 @@ const app = express()
 
 const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short'
 
-// app.get('/', (req, res) => {
-//   res.send('Hello World!');
-// });
-
-// app.listen(3000, () => {
-//   console.log('Example app listening on port 3000!');
-// });
 
 
 app.use(logger(formatsLogger))
