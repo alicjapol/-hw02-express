@@ -7,6 +7,7 @@ const contactSchema = Joi.object({
   name: Joi.string().min(3).required(),
   email: Joi.string().email().required(),
   phone: Joi.string().min(9).required(),
+  favorite: Joi.boolean(),
 });
 
 router.get("/", async (req, res, next) => {
@@ -37,7 +38,9 @@ router.post("/", async (req, res, next) => {
   try {
     const value = await contactSchema.validateAsync(req.body);
     const newContact = await contactsOperations.addContact(value);
-    res.status(201).json(newContact);
+    res
+      .status(201)
+      .json({ status: "success", code: 201, data: { newContact } });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -66,9 +69,10 @@ router.put("/:contactId", async (req, res, next) => {
       value
     );
     if (updatedContact) {
-      return res.json(updatedContact);
+      res.json({ status: "success", code: 200, data: { updatedContact } });
+    } else {
+      res.status(404).json({ message: "Not found" });
     }
-    return res.status(404).json({ message: "Not found" });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
