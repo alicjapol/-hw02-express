@@ -45,8 +45,7 @@ const updateContact = async (contactId, body) => {
   return null;
 };
 
-const mongoose = require('mongoose');
-
+const mongoose = require('mongoose')
 const contactSchema = new mongoose.Schema({
   name: { type: String, required: [true, 'Set name for contact'] },
   email: { type: String },

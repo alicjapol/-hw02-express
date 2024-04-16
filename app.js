@@ -8,19 +8,20 @@ const app = express();
 
 const formatsLogger = app.get("env") === "development" ? "dev" : "short";
 
-const mongoose = require('mongoose');
-const uri = "mongodb+srv://alicjaxpoltorak:master3@cluster0.zaf91zr.mongodb.net/";
+const mongoose = require("mongoose");
+const uri =
+  "mongodb+srv://alicjaxpoltorak:master3@cluster0.zaf91zr.mongodb.net/";
 
-mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Database connection successful'))
-  .catch(err => {
-    console.error('Database connection error', err);
+mongoose
+  .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("Database connection successful"))
+  .catch((err) => {
+    console.error("Database connection error", err);
     process.exit(1);
   });
 
-
-
-
+const userRoutes = require("./routes/users");
+app.use("/users", userRoutes);
 
 app.use(logger(formatsLogger));
 app.use(cors());
