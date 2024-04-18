@@ -4,14 +4,14 @@ const bcrypt = require("bcryptjs");
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
-    required: [true, "Emial is required"],
+    required: [true, "Email is required"],
     unique: true,
   },
   password: {
     type: String,
     required: [true, "Password is required"],
   },
-  subsription: {
+  subscription: {
     type: String,
     enum: ["starter", "pro", "business"],
     default: "starter",
@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema({
     default: null,
   },
 });
+
 
 userSchema.methods.isValidPassword = async function (password) {
   return await bcrypt.compare(password, this.password);
