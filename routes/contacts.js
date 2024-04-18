@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const contactsOperations = require("../../models/contacts");
+const Contact = require("../models/contacts.model");
 const Joi = require("joi");
+const auth = require("./auth");
 
 const contactSchema = Joi.object({
   name: Joi.string().min(3).required(),
@@ -9,10 +10,11 @@ const contactSchema = Joi.object({
   phone: Joi.string().min(9).required(),
   favorite: Joi.boolean(),
 });
+router.use(auth);
 
 router.get("/", async (req, res, next) => {
   try {
-    const contacts = await contactsOperations.listContacts();
+    const contacts = await Contact.find({ owner: req.user._id });
     res.json({ status: "success", code: 200, data: { contacts } });
   } catch (e) {
     next(e);
@@ -21,9 +23,10 @@ router.get("/", async (req, res, next) => {
 
 router.get("/:contactId", async (req, res, next) => {
   try {
-    const contact = await contactsOperations.getContactById(
-      req.params.contactId
-    );
+    const contact = await Contact.findOne({
+      _id: req.params.contactId,
+      owner: req.user._id,
+    });
     if (contact) {
       res.json({ status: "success", code: 200, data: { contact } });
     } else {
@@ -37,10 +40,9 @@ router.get("/:contactId", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
   try {
     const value = await contactSchema.validateAsync(req.body);
-    const newContact = await contactsOperations.addContact(value);
-    res
-      .status(201)
-      .json({ status: "success", code: 201, data: { newContact } });
+    const newContact = new Contact({ ...value, owner: req.user._id });
+    await newContact.save();
+    res.status(201).json({ status: "success", code: 201, data: { newContact } });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -48,11 +50,12 @@ router.post("/", async (req, res, next) => {
 
 router.delete("/:contactId", async (req, res, next) => {
   try {
-    const contact = await contactsOperations.removeContact(
-      req.params.contactId
-    );
+    const contact = await Contact.findOneAndDelete({
+      _id: req.params.contactId,
+      owner: req.user._id,
+    });
     if (contact) {
-      res.json({ status: "success", code: 200, message: "contact deleted" });
+      res.json({ status: "success", code: 200, message: "Contact deleted" });
     } else {
       res.json({ status: "error", code: 404, message: "Not found" });
     }
@@ -64,9 +67,10 @@ router.delete("/:contactId", async (req, res, next) => {
 router.put("/:contactId", async (req, res, next) => {
   try {
     const value = await contactSchema.validateAsync(req.body);
-    const updatedContact = await contactsOperations.updateContact(
-      req.params.contactId,
-      value
+    const updatedContact = await Contact.findOneAndUpdate(
+      { _id: req.params.contactId, owner: req.user._id },
+      value,
+      { new: true }
     );
     if (updatedContact) {
       res.json({ status: "success", code: 200, data: { updatedContact } });
