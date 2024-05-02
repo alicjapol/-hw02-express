@@ -10,7 +10,7 @@ const userRoutes = require('./routes/users');
 const contactsRouter = require('./routes/contacts');
 
 const app = express();
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 
 const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short';
