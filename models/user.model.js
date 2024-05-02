@@ -20,6 +20,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  avatarURL: String,
+
 });
 
 userSchema.methods.isValidPassword = async function(password) {

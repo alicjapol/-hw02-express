@@ -3,11 +3,15 @@ const logger = require('morgan');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const path = require('path');
+
 
 const userRoutes = require('./routes/users');
 const contactsRouter = require('./routes/contacts');
 
 const app = express();
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short';
 app.use(logger(formatsLogger));

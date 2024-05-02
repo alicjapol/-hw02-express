@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/user.model"); 
+const User = require("../models/user.model");
 const Joi = require("joi");
+const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
+const gravatar = require('gravatar');
 require('dotenv').config();
 
 const authenticateToken = (req, res, next) => {
@@ -29,10 +31,15 @@ router.post("/signup", async (req, res) => {
     if (existingUser) {
       return res.status(409).json({ message: "Email in use" });
     }
-    const newUser = new User({ email, password });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    const avatarURL = gravatar.url(email, {s: '200', r: 'pg', d: 'mm'});
+    
+    const newUser = new User({ email, password: hashedPassword, avatarURL });
     await newUser.save();
     res.status(201).json({
-      user: { email: newUser.email, subscription: newUser.subscription },
+      user: { email: newUser.email, subscription: newUser.subscription, avatarURL: newUser.avatarURL },
     });
   } catch (error) {
     res.status(400).json({ message: error.details[0].message });
@@ -43,7 +50,7 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = await userValidationSchema.validateAsync(req.body);
     const user = await User.findOne({ email });
-    if (!user || !(await user.isValidPassword(password))) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Email or password is wrong" });
     }
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
@@ -51,7 +58,7 @@ router.post("/login", async (req, res) => {
     await user.save();
     res.json({
       token,
-      user: { email: user.email, subscription: user.subscription },
+      user: { email: user.email, subscription: user.subscription, avatarURL: user.avatarURL },
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -71,6 +78,7 @@ router.get("/current", authenticateToken, (req, res) => {
   res.status(200).json({
     email: req.user.email,
     subscription: req.user.subscription,
+    avatarURL: req.user.avatarURL
   });
 });
 
