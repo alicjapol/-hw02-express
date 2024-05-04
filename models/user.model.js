@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -20,8 +21,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
-  avatarURL: String,
-
+  avatarURL: {
+    type: String,
+    default: "https://www.gravatar.com/avatar/?d=identicon"
+  },
 });
 
 userSchema.methods.isValidPassword = async function(password) {
@@ -33,8 +36,13 @@ userSchema.pre("save", async function(next) {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
   }
+  if (this.isModified("email") || this.isNew) {
+    const hash = crypto.createHash('md5').update(this.email).digest('hex');
+    this.avatarURL = `https://www.gravatar.com/avatar/${hash}?d=identicon`;
+  }
   next();
 });
 
 const User = mongoose.model("User", userSchema);
+
 module.exports = User;

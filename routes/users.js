@@ -5,6 +5,9 @@ const Joi = require("joi");
 const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
 const gravatar = require('gravatar');
+const multer = require('multer');
+const Jimp = require('jimp');
+const fs = require('fs').promises; 
 require('dotenv').config();
 
 const authenticateToken = (req, res, next) => {
@@ -19,22 +22,29 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+const upload = multer({
+  dest: 'tmp/',
+  limits: { fileSize: 2 * 1024 * 1024 } 
+});
+
 const userValidationSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
 });
 
 router.post("/signup", async (req, res) => {
+  console.log("test")
   try {
     const { email, password } = await userValidationSchema.validateAsync(req.body);
     const existingUser = await User.findOne({ email });
+    console.log(email, password)
     if (existingUser) {
       return res.status(409).json({ message: "Email in use" });
     }
-
+    
+    const avatarURL = gravatar.url(email, {s: '200', r: 'pg', d: 'mm'});
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const avatarURL = gravatar.url(email, {s: '200', r: 'pg', d: 'mm'});
     
     const newUser = new User({ email, password: hashedPassword, avatarURL });
     await newUser.save();
@@ -80,6 +90,22 @@ router.get("/current", authenticateToken, (req, res) => {
     subscription: req.user.subscription,
     avatarURL: req.user.avatarURL
   });
+});
+
+router.patch("/avatars", authenticateToken, upload.single('avatar'), async (req, res) => {
+  try {
+    const { path: tempPath, filename } = req.file;
+    const image = await Jimp.read(tempPath);
+    const newFileName = `public/avatars/${filename}.png`;
+
+    await image.resize(250, 250).writeAsync(newFileName);
+    await fs.unlink(tempPath);
+
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, { avatarURL: `/avatars/${filename}.png` }, { new: true });
+    res.json({ avatarURL: updatedUser.avatarURL });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 module.exports = router;
