@@ -23,22 +23,36 @@ const userSchema = new mongoose.Schema({
   },
   avatarURL: {
     type: String,
-    default: "https://www.gravatar.com/avatar/?d=identicon"
+    default: function () {
+      const hash = crypto.createHash("md5").update(this.email).digest("hex");
+      return `https://www.gravatar.com/avatar/${hash}?d=identicon`;
+    },
+  },
+  verify: {
+    type: Boolean,
+    default: false,
+  },
+  verificationToken: {
+    type: String,
+    required: [true, "Verify token is required"],
   },
 });
 
-userSchema.methods.isValidPassword = async function(password) {
+userSchema.methods.isValidPassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
 
-userSchema.pre("save", async function(next) {
+userSchema.pre("save", async function (next) {
   if (this.isModified("password") || this.isNew) {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
   }
-  if (this.isModified("email") || this.isNew) {
+  if (!this.avatarURL) {
     const hash = crypto.createHash('md5').update(this.email).digest('hex');
     this.avatarURL = `https://www.gravatar.com/avatar/${hash}?d=identicon`;
+  }
+  if (this.isNew) {
+    this.verificationToken = crypto.randomBytes(16).toString('hex'); // Generuje token weryfikacyjny
   }
   next();
 });
