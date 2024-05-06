@@ -16,3 +16,5 @@ const sendVerificationEmail = (email, verificationToken) => {
     console.log(body);
   });
 };
+  
+module.exports = {sendVerificationEmail};
